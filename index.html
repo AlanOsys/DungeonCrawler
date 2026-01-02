@@ -222,7 +222,76 @@ position: absolute;
     -webkit-text-stroke: 1px black;
 
 }
+#DiceContainer{
+    position: absolute;
+    left: 0px;
+    top: 400px;
+    width: 400px;
+    height: 200px;
+    background-color: #16161d;
+}
+#PickDiceToSwap{
+    position: absolute;
+    left: 0px;
+    top: 400px;
+    width: 400px;
+    height: 200px;
+    background-color: #16161d;
+}
+.DiceDisplay{
+    width: 45px;
+    height: 45px;
+    float: left;
+    background-color: aliceblue;
+    
+    
+    margin-top: 5px;
+    margin-left: 5px;
+    font-size: 40px;
+    text-align: center;
+}
+.DiceEntity{
+    float: left;
 
+}
+#DiceTooltip{
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    width: 400px;
+    height: 200px;
+    background-color: #16161d;
+}
+.discard{
+    position: absolute;
+    bottom: 0px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: red;
+    color: white;
+    width: auto;
+    height: auto;
+    font-size: 30px;
+}
+.TooltipDiceDisplay{
+    left: 0px;
+    position: absolute;
+    top: 30px;
+}
+#HowToPlayButton{
+    left: 450px;
+    width: auto;
+    height: auto;
+    position: absolute;
+    font-size: 20px;
+}
+#LoreButton{
+    left: 580px;
+    width: auto;
+    height: auto;
+    position: absolute;
+    font-size: 20px;
+}
 </style>
 
 </head>
@@ -237,7 +306,10 @@ position: absolute;
     <div id="Inventory">
         <p style="position: absolute;left: 8px;top: -15px;">Inventory</p>
     </div>
-    <div style="left: 500px;position: absolute; max-width: 400px;">
+    <div id="DiceContainer"></div>
+    <button onclick="HowToPlay()" id="HowToPlayButton">How to Play</button>
+    <button onclick="Lore()" id="LoreButton">Lore</button>
+    <div style="left: 450px;position: absolute; max-width: 400px; top: 20px; opacity: 0;" id="ToolTip">
         <p>How to Play:</p>
         <p>Move left and right using A and D to explore the dungeon.</p>
         <p>S = Shop where you can use gold gathered to buy items that 
@@ -252,14 +324,27 @@ position: absolute;
         </p>
 
     </div>
+    <div style="left: 450px;position: absolute; max-width: 400px; top: 20px; opacity: 0;" id="ToolTipLore">
+        <p>Lore:</p>
+        <p>Example lore</p>
+    </div>
 <script>
-    CurrentRoute=0
-    container = document.getElementById("container")
+Depth = 1
+CurrentRoute=0
+container = document.getElementById("container")
 Routes = [[]]
 bounds = 8
 Shopping = false
 InCombat = false
 Inventory = document.getElementById("Inventory")
+function Lore(){
+    document.getElementById("ToolTip").style.opacity = 0
+    document.getElementById("ToolTipLore").style.opacity = 1
+}
+function HowToPlay(){
+    document.getElementById("ToolTip").style.opacity = 1
+    document.getElementById("ToolTipLore").style.opacity = 0
+}
 class Item{
     constructor(name,stackable){
         this.name = name
@@ -302,7 +387,65 @@ class Item{
 
                 }
             }
-        }else{Emblem.innerHTML = this.name[0]}
+        }else{
+            Emblem.innerHTML = this.name[0]
+            Item.onclick = function DiceItemOnclick(){
+                if(!InCombat&&!Shopping){
+                    //display the tooltip now
+                    var DiceTooltip = document.createElement("DiceTooltip")
+                    DiceTooltip.id = "DiceTooltip"
+                    var Discard = document.createElement("button")
+                    Discard.className = 'discard'
+                    Discard.innerHTML = 'Discard'
+                    Discard.onclick = function DiscardTooltop(){
+                        Item.remove()
+                        DiceTooltip.remove()
+                    }
+                    var TooltipDiceDisplay = document.createElement("div")
+                    TooltipDiceDisplay.className = 'TooltipDiceDisplay'
+                    var dicerolls = DiceGachapon(Emblem.innerHTML)
+                    for(let i = 0;i<6;i++){
+                        var face = document.createElement("div")
+                        face.className = "DiceDisplay"
+                        face.innerHTML = dicerolls[i]
+                        TooltipDiceDisplay.appendChild(face)
+                    }
+                    DiceTooltip.appendChild(TooltipDiceDisplay)
+                    DiceTooltip.appendChild(Discard)
+                    document.body.appendChild(DiceTooltip)
+                    //light up the 3 DiceDisplay.children
+                    var PickDiceToSwap = document.createElement("div")
+                    PickDiceToSwap.id = "PickDiceToSwap"
+                    for(let j = 0;j<3;j++){
+
+                    
+                        var DiceContainerDisplay = document.createElement("div")
+                        DiceContainerDisplay.className = "DiceEntity"
+                        for(let i = 0;i<6;i++){
+                            var face = document.createElement("div")
+                            face.className = "DiceDisplay"
+                            face.innerHTML = AllDice[j].rolls[i]
+                            face.style.backgroundColor = 'green'
+                            DiceContainerDisplay.appendChild(face)
+                            face.onclick = function diceswap(){
+                                AllDice[j].changeRolls(dicerolls)
+                                Item.remove()
+                                DiceTooltip.remove()
+                                PickDiceToSwap.remove()
+                                //TODO
+                            }
+                        }
+                        
+                        PickDiceToSwap.appendChild(DiceContainerDisplay)
+                    }
+                    document.body.appendChild(PickDiceToSwap)
+                    //give them onclicks that display a lil tooltip that shows what you gacha'd
+                    //and changeRolls()
+                    //add a discard
+                    
+                }
+            }
+        }
         
         if(this.stackable){
             Amount.innerHTML = "0"
@@ -318,13 +461,77 @@ class Item{
 class Dice{
     constructor(){
         this.rolls = [1,2,3,4,5,6]
+        var DiceEntity = document.createElement("div")
+        this.Entity = DiceEntity
+        DiceEntity.className = "DiceEntity"
+        for(let i = 0;i<6;i++){
+            var DiceDisplay = document.createElement("div")
+            DiceDisplay.className = "DiceDisplay"
+            DiceEntity.appendChild(DiceDisplay)
+        }
+        document.getElementById("DiceContainer").appendChild(DiceEntity)
     }
     pick(){
         return this.rolls[Math.floor(Math.random()*this.rolls.length-0.00001)]
     }
     changeRolls(newRolls){
         this.rolls = newRolls
+        for(let i = 0;i<6;i++){
+            this.Entity.children[i].innerHTML = newRolls[i]
+        }
     }
+}
+function updateDice(){
+    //update visuals in the DiceContainer div
+    DiceContainer = document.getElementById("DiceContainer")
+    for(let i = 0;i<DiceContainer.children.length;i++){
+        for(j in AllDice[i].rolls){
+            DiceContainer.children[i].children[j].innerHTML = AllDice[i].rolls[j]
+        }
+        
+
+    }
+}
+function DiceGachapon(rarity){
+    rolls = [0,0,0,0,0,0]
+    if(rarity == 'B'){
+        total = 21
+        for(let i = 0;i<6;i++){
+            if(total>6){
+                roll = Math.floor(Math.random()*6-0.00001)+1
+            }else{
+                roll = Math.floor(Math.random()*total-0.00001)+1
+            }
+            
+            rolls[i] = roll
+            total -= roll
+        }
+    }else if(rarity == 'R'){
+        total = 25
+        for(let i = 0;i<6;i++){
+            if(total>8){
+                roll = Math.floor(Math.random()*8-0.00001)+1
+            }else{
+                roll = Math.floor(Math.random()*total-0.00001)+1
+            }
+            
+            rolls[i] = roll
+            total -= roll
+        }
+    }else if(rarity == 'E'){
+        total = 30
+        for(let i = 0;i<6;i++){
+            if(total>10){
+                roll = Math.floor(Math.random()*10-0.00001)+1
+            }else{
+                roll = Math.floor(Math.random()*total-0.00001)+1
+            }
+            
+            rolls[i] = roll
+            total -= roll
+        }
+    }
+    return rolls
 }
 function Initialise(){
     for(let i = 0;i<bounds;i++){
@@ -336,9 +543,12 @@ function Initialise(){
     }
     Gold = new Item("Gold",true)
     Gold.instantiate()
+    
     Dice1 = new Dice()
     Dice2 = new Dice()
     Dice3 = new Dice()
+    AllDice = [Dice1,Dice2,Dice3]
+    updateDice()
     //Gold.add(100)
     
 }
@@ -367,19 +577,27 @@ function Move(Orientation){
             Routes[CurrentRoute][playerIndex] = Routes[CurrentRoute][playerIndex+1]
             Routes[CurrentRoute][playerIndex+1] = '#'
             if(playerIndex==Routes[CurrentRoute].length-bounds){
+                Depth+=1
                 ProbRoll = Math.abs(Math.floor(Math.random()*5-0.0000001))
-                if(ProbRoll != 0){
+                if(ProbRoll != 0 && Depth!=10){
                     Routes[CurrentRoute].push('-')
-                }if(ProbRoll == 0){
+                }if(ProbRoll == 0 && Depth!=10){
                     Encounters = ['A','S']
                     RandomEncounter = Math.abs(Math.floor(Math.random()*Encounters.length-0.000001))
                     Routes[CurrentRoute].push(Encounters[RandomEncounter])
+                }if(Depth == 10){
+                    Depth = 1
+                    BossArray = ['?']
+                    RandomEncounter = Math.abs(Math.floor(Math.random()*BossArray.length-0.000001))
+                    Routes[CurrentRoute].push(BossArray[RandomEncounter])
                 }
             }
         }if(Routes[CurrentRoute][playerIndex+1] == 'A'){
             Combat('A')
         }if(Routes[CurrentRoute][playerIndex+1] == 'S'){
             Shop()
+        }if(Routes[CurrentRoute][playerIndex+1] == '?'){
+            Combat('?')
         }
         
         
@@ -436,7 +654,7 @@ function Shop(){
     document.body.appendChild(ShopScreen)    
     shopTypes = ['CommonShop','RareShop','EpicShop']
     ItemTypes = [
-        ['Basic Dice Gachapon','+1 to Roll'],
+        ['Basic Dice Gachapon'],//,'+1 to Roll'],
         ['Rare Dice Gachapon','+2 to Roll'],
         ['Epic Dice Gachapon','+3 to Roll']
     ]
@@ -480,6 +698,7 @@ function Shop(){
 }
 function Combat(Enemy){
     InCombat = true
+    console.log(AllDice[0].rolls+"\n"+AllDice[1].rolls+"\n"+AllDice[2].rolls+"\n")
     CombatScreen = document.createElement("div")
     CombatScreen.id = "CombatScreen"
     document.body.appendChild(CombatScreen)
@@ -521,6 +740,11 @@ function Combat(Enemy){
         Roll2 = Math.floor(Math.random()*6-0.00001)+1
         Roll3 = Math.floor(Math.random()*6-0.00001)+1
         SearchUp('A')
+    }if(Enemy == '?'){
+        //Basic Boss to trial boss combat on 
+        Roll1 = Math.floor(Math.random()*8-0.00001)+1
+        Roll2 = Math.floor(Math.random()*8-0.00001)+1
+        Roll3 = Math.floor(Math.random()*8-0.00001)+1
     }
     Roll1Display = document.createElement("div")
     Roll2Display = document.createElement("div")
@@ -543,8 +767,8 @@ function Combat(Enemy){
     AllyDice.id = "AllyDice"
     
     Roll1 = Dice1.pick()
-    Roll2 = Dice1.pick()
-    Roll3 = Dice1.pick()
+    Roll2 = Dice2.pick()
+    Roll3 = Dice3.pick()
     
     Roll1Display = document.createElement("div")
     Roll2Display = document.createElement("div")
@@ -761,7 +985,7 @@ function ProceedToCombat(Enemy){
         InCombat = false
         document.getElementById("Search").children[0].innerHTML = "Name"
         document.getElementById("Search").children[1].innerHTML = "Description"
-        Gold.add(5*wins)
+        Gold.add(1*wins)
     }else if(document.getElementById("Fight").innerHTML == 'Lost'){
         document.getElementById("CombatScreen").remove()
         InCombat = false
